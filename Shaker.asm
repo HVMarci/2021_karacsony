@@ -15,6 +15,8 @@ VIC_IRQ = $FE ; FE-FF: vector to IRQ
 ; együtt mozgassuk a kettőt!
 START_CHARACTER = $0400
 END_LINE = 58
+START_CHARACTER_INDEX = 40 ; start for POS_VAR
+START_START_CHARACTER_INDEX = 1 ; start for POS_START_VAR
 
 Start
         sei
@@ -29,16 +31,10 @@ Start
 
 InitFirstLine
         ; setup step variables
-        lda #20
+        lda #START_CHARACTER_INDEX
         sta POS_VAR
-        sec
-        sbc #39
-        bcs @StPSV
-
-        ; underflow
-        adc MessageLength
-        
-@StPSV  sta POS_START_VAR
+        lda #START_START_CHARACTER_INDEX
+        sta POS_START_VAR
 
         ; fill screen
         ldx #39
@@ -141,12 +137,10 @@ CIA_IRQ
 @Left   lda POS_START_VAR
         clc
         adc #39
-        bcc @Stl ; nincs carry => nincs underflow
-        ; underflow
-        ldy #123
-        sty $0454
-        clc
-        adc MessageLength
+        cmp MessageLength
+        bcc @Stl ; nincs carry => nincs overflow
+        ; overflow
+        sbc MessageLength
 
 @StL    sta POS_VAR
         jmp @End
@@ -156,10 +150,8 @@ CIA_IRQ
 @Right  lda POS_VAR
         sec
         sbc #39
-        bcs @StR ; van carry => nincs overflow
-        ; overflow
-        ldy #123
-        sty $0482
+        bcs @StR ; van carry => nincs underflow
+        ; underflow
         adc MessageLength
 @StR    sta POS_START_VAR
 

@@ -110,7 +110,7 @@ InitIRQs
         ; setup IRQ variables
         lda #7
         sta SCROLL_VAR
-        lda #$01
+        lda #$00
         sta DIR_VAR
 
         ; set CSEL to 0 and XSCROLL to 7
@@ -125,6 +125,9 @@ IRQHandler
         and $D019 ; nem nulla: VIC IRQ, nulla: CIA IRQ
         beq CIA_IRQ ; közelben kell lennie
         jmp (VIC_IRQ)
+
+
+
 
 
 CIA_IRQ
@@ -143,6 +146,16 @@ CIA_IRQ
         sbc MessageLength
 
 @StL    sta POS_VAR
+
+        ; stop the B timer
+        lda #%01010000
+        ; setup B timer
+        lda #100
+        sta $DC06
+        ; start the B timer
+        lda #%01010001
+        sta $DC0F
+
         jmp @End
 
 
@@ -155,11 +168,21 @@ CIA_IRQ
         adc MessageLength
 @StR    sta POS_START_VAR
 
+        ; stop the B timer
+        lda #%01010000
+        ; setup B timer
+        lda #50
+        sta $DC06
+        ; start the B timer
+        lda #%01010001
+        sta $DC0F
 
 
-        ; reset IRQ flags in CIA
-@End    lda $DC0D
+@End    ; reset IRQ flags in CIA
+        lda $DC0D
         rti
+
+
 
 
 

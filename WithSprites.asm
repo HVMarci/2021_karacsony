@@ -6,7 +6,8 @@
 
 *=$0900
 
-SPRITE0_POS_Y = 60
+START_LINE = 100
+MID_LINE = 142
 
 Init
         sei
@@ -35,7 +36,7 @@ InitIRQs
         sta $D011 ; Control register 1
         lda #%00001000
         sta $D016 ; Control register 2
-        lda #$00
+        lda #MID_LINE-1
         sta $D012 ; RASTER
         lda #%00000001 ; IRQ on raster line
         sta $D01A ; IRQ enable register
@@ -68,25 +69,34 @@ ClearScreen
 
 
 VicIrqHandler
+        ; wait for border
+        jmp *+3
+repeat 25
+        nop
+endrepeat
         ; change 0th sprite's Y position
         lda $D001
-        cmp #SPRITE0_POS_Y
+        cmp #START_LINE
         beq @Down ; carry will be always set after this operation
 
 @Up     sbc #42
+        ldx #MID_LINE-1
         jmp @End
 
 @Down   clc
         adc #42
+        ldx #0
 
 @End    sta $D001
+        stx $D012
 
-        inc $D000 ; sprite 0 X
+        ;inc $D000 ; sprite 0 X
 
         ; alja-teteje váltás
         lda #$01
         eor $07F8
         sta $07F8
+
 
         asl $D019
         rti
@@ -112,7 +122,7 @@ SetupSprites
         sta $D010 ; sprites' X coordinates' 8th bits
         lda #200
         sta $D000 ; 0th sprite's X coordinate
-        lda #SPRITE0_POS_Y
+        lda #START_LINE
         sta $D001 ; 0th sprite's Y coordinate
 
         ; copy sprite data in memory to $3F00 and $3FC0

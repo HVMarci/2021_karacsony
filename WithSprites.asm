@@ -80,32 +80,79 @@ endrepeat
         beq @Down ; carry will be always set after this operation
 
 @Up     sbc #21
+        sta $D001
+        lda $D003
+        sbc #21
         ldx #MID_LINE-1
         jmp @End
 
 @Down   clc
         adc #21
-        ldx #0
+        sta $D001
+        lda $D003
+        adc #21
+        ldx #MID_LINE+50
 
-@End    sta $D001
+@End    sta $D003
         stx $D012
 
         ; alja-teteje váltás
         lda #$01
         eor $07F8
         sta $07F8
+        lda #$01
+        eor $07F9
+        sta $07F9
 
         and #$01
-        beq @Finish ; csak egyszer változtassuk az X-et
+        bne @Fin2 ; csak egyszer változtassuk az X-et
 
-        inc $D000 ; sprite 0 X
-        bne @Finish
-        lda #$01
-        eor $D010 ; 8th bit of X positions
+        lda #$00
+@S0     ldx $D000
+        bne @S1
+        ora #1
+
+@S1     ldx $D002
+        bne @S2
+        ora #2
+
+@S2     ldx $D004
+        bne @S3
+        ora #4
+
+@S3     ldx $D006
+        bne @S4
+        ora #8
+
+@S4     ldx $D008
+        bne @S5
+        ora #16
+
+@S5     ldx $D00A
+        bne @S6
+        ora #32
+
+@S6     ldx $D00C
+        bne @S7
+        ora #64
+
+@S7     ldx $D00E
+        bne @SE
+        ora #128
+
+@SE     eor $D010 ; 8th bit of X positions
         sta $D010
 
 
-@Finish lda $D010
+@Fin1   dec $D000 ; 0th sprite's X
+        dec $D002 ; 1st sprite's X
+        dec $D004 ; 2nd sprite's X
+        dec $D006 ; 3rd sprite's X
+        dec $D008 ; 4th sprite's X
+        dec $D00A ; 5st sprite's X
+        dec $D00C ; 6th sprite's X
+        dec $D00E ; 7st sprite's X
+@Fin2   lda $D010
         sta $0451
         lda $D000
         sta $0452
@@ -119,30 +166,41 @@ endrepeat
 SetupSprites
         lda #$01 ; white
         sta $D027 ; color of sprite 0
+        sta $D028 ; color of sprite 1
         lda #%00000000
         sta $D01C ; multicolor mode off
-        lda #%00000001
-        sta $D015 ; turn only sprite 0 on
+        lda #%00000011
+        sta $D015 ; turn the sprites on
         lda #252
         sta $07F8 ; set sprite 0's pointer to $3F00-$3F39
+        lda #254
+        sta $07F9 ; set sprite 1's pointer to $3F80-$3FB9
         lda #$00
         sta $D01D ; sprite nagyítás X irányban
         sta $D017 ; sprite nagyítás Y irányban
 
         ; position sprite 0
-        lda #$0
+        lda #$00
         sta $D010 ; sprites' X coordinates' 8th bits
         lda #200
         sta $D000 ; 0th sprite's X coordinate
         lda #START_LINE
         sta $D001 ; 0th sprite's Y coordinate
+        lda #226
+        sta $D002 ; 1th sprite's X coordinate
+        lda #START_LINE+1
+        sta $D003 ; 1th sprite's Y coordinate
 
         ; copy sprite data in memory to $3F00 and $3FC0
         ldx #63
-@Loop   lda Sprite1,X
+@Loop   lda SpriteBTeteje,X
         sta $3F00,X
-        lda Sprite2,X
+        lda SpriteBAlja,X
         sta $3F40,X
+        lda Sprite1,X
+        sta $3F80,X
+        lda Sprite2,X
+        sta $3FC0,X
         dex
         bpl @Loop ; end at X=255
 
@@ -218,6 +276,55 @@ Sprite2
         BYTE $00,$16,$00
         BYTE $00,$1C,$00
         BYTE $00,$08,$00
+
+
+
+SpriteBAlja
+        BYTE $3F,$FF,$F0
+        BYTE $3C,$03,$F8
+        BYTE $3C,$00,$7C
+        BYTE $3C,$00,$1E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$1E
+        BYTE $3C,$00,$7E
+        BYTE $3F,$FF,$F8
+        BYTE $3F,$FF,$E0
+        BYTE $00,$00,$00
+        BYTE $00,$00,$00
+
+
+SpriteBTeteje
+        BYTE $00,$00,$00
+        BYTE $00,$00,$00
+        BYTE $3F,$FF,$F0
+        BYTE $3F,$FF,$F8
+        BYTE $3C,$00,$7C
+        BYTE $3C,$00,$1C
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0E
+        BYTE $3C,$00,$0C
+        BYTE $3C,$00,$3C
+        BYTE $3C,$00,$FC
+        BYTE $3F,$FF,$F0
 
 
 

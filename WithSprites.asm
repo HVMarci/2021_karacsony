@@ -69,7 +69,6 @@ ClearScreen
 
 
 VicIrqHandler
-        inc $D021
         ; change 0th sprite's Y position
         lda $D001
         cmp #START_LINE
@@ -88,47 +87,43 @@ VicIrqHandler
         sta $D005
         sta $D007
         sta $D009
-        sta $D00A
-        sta $D00C
-        sta $D00E
+        sta $D00B
+        sta $D00D
+        sta $D00F
         stx $D012
 
-        ; alja-teteje váltás
-        lda #$01
-        eor $07F8
-        sta $07F8
+; V1
+;        ; alja-teteje váltás
+;        lda #$01 ; 2 cycles
+;        eor $07F8 ; 4 cycles
+;        sta $07F8 ; 4 cycles
+;        ; total: 10 * 8 = 80 cycles
 
-        lda #$01
-        eor $07F9
-        sta $07F9
+; V2
+        clc ; 2 cycles
+        lda #$01 ; 2 cycles
+        eor $07F8 ; 4 cycles
+        sta $07F8 ; 4 cycles
 
-        lda #$01
-        eor $07FA
+        adc #2 ; 2 cycles
+        sta $07F9 ; 4 cycles
+
+        adc #2
         sta $07FA
-
-        lda #$01
-        eor $07FB
+        adc #2
         sta $07FB
-
-        lda #$01
-        eor $07FC
+        adc #2
         sta $07FC
-
-        lda #$01
-        eor $07FD
+        adc #2
         sta $07FD
-
-        lda #$01
-        eor $07FE
+        adc #2
         sta $07FE
-
-        lda #$01
-        eor $07FF
+        adc #2
         sta $07FF
-
+        ; total: 12 + 7 * 6 = 54 cycles
 
         and #$01
-        bne @Fin2 ; csak egyszer változtassuk az X-et
+        bne @Finish ; csak egyszer változtassuk az X-et
 
         lda #$00
 @S0     ldx $D000
@@ -167,7 +162,9 @@ VicIrqHandler
         sta $D010
 
 
-@Fin1   dec $D000 ; 0th sprite's X
+        dec $D000 ; 0th sprite's X
+        lda $D00E
+        sta $0456
         dec $D002 ; 1st sprite's X
         dec $D004 ; 2nd sprite's X
         dec $D006 ; 3rd sprite's X
@@ -175,14 +172,14 @@ VicIrqHandler
         dec $D00A ; 5st sprite's X
         dec $D00C ; 6th sprite's X
         dec $D00E ; 7st sprite's X
+        lda $D00E
+        sta $0457
 
-@Fin2   ; Random debugging info
+@Finish ; Random debugging info
         lda $D010
         sta $0451
         lda $D000
         sta $0452
-
-        dec $D021
 
         asl $D019
         rti
@@ -238,37 +235,37 @@ SetupSprites
 
         lda #90 
         sta $D002 ; 1st sprite's X coordinate
-        lda #START_LINE+1
+        lda #START_LINE
         sta $D003 ; 1st sprite's Y coordinate
 
         lda #116
         sta $D004 ; 2nd sprite's X coordinate
-        lda #START_LINE+1
+        lda #START_LINE
         sta $D005 ; 2nd sprite's Y coordinate
 
         lda #142
         sta $D006 ; 3rd sprite's X coordinate
-        lda #START_LINE+1
+        lda #START_LINE
         sta $D007 ; 3rd sprite's Y coordinate
 
         lda #168
         sta $D008 ; 4th sprite's X coordinate
-        lda #START_LINE+1
+        lda #START_LINE
         sta $D009 ; 4th sprite's Y coordinate
 
         lda #194
         sta $D00A ; 5th sprite's X coordinate
-        lda #START_LINE+1
+        lda #START_LINE
         sta $D00B ; 5th sprite's Y coordinate
 
         lda #220
         sta $D00C ; 6th sprite's X coordinate
-        lda #START_LINE+1
+        lda #START_LINE
         sta $D00D ; 6th sprite's Y coordinate
 
         lda #246
         sta $D00E ; 7th sprite's X coordinate
-        lda #START_LINE+1
+        lda #START_LINE
         sta $D00F ; 7th sprite's Y coordinate
 
         ; copy sprite datas into memory
@@ -708,6 +705,7 @@ SpriteAAlja
         BYTE $C0,$00,$03
         BYTE $80,$00,$01
         BYTE $80,$00,$01
+
 
 
 

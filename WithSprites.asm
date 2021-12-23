@@ -7,7 +7,7 @@
 *=$0900
 
 START_LINE = 100
-MID_LINE = 142
+MID_LINE = 121
 
 Init
         sei
@@ -79,24 +79,36 @@ endrepeat
         cmp #START_LINE
         beq @Down ; carry will be always set after this operation
 
-@Up     sbc #42
+@Up     sbc #21
         ldx #MID_LINE-1
         jmp @End
 
 @Down   clc
-        adc #42
+        adc #21
         ldx #0
 
 @End    sta $D001
         stx $D012
-
-        ;inc $D000 ; sprite 0 X
 
         ; alja-teteje váltás
         lda #$01
         eor $07F8
         sta $07F8
 
+        and #$01
+        beq @Finish ; csak egyszer változtassuk az X-et
+
+        inc $D000 ; sprite 0 X
+        bne @Finish
+        lda #$01
+        eor $D010 ; 8th bit of X positions
+        sta $D010
+
+
+@Finish lda $D010
+        sta $0451
+        lda $D000
+        sta $0452
 
         asl $D019
         rti
@@ -113,7 +125,7 @@ SetupSprites
         sta $D015 ; turn only sprite 0 on
         lda #252
         sta $07F8 ; set sprite 0's pointer to $3F00-$3F39
-        lda #$01
+        lda #$00
         sta $D01D ; sprite nagyítás X irányban
         sta $D017 ; sprite nagyítás Y irányban
 

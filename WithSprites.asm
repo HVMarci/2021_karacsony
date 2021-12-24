@@ -36,7 +36,7 @@ InitIRQs
         sta $D011 ; Control register 1
         lda #%00001000
         sta $D016 ; Control register 2
-        lda #MID_LINE-1
+        lda #MID_LINE-3
         sta $D012 ; RASTER
         lda #%00000001 ; IRQ on raster line
         sta $D01A ; IRQ enable register
@@ -69,20 +69,25 @@ ClearScreen
 
 
 VicIrqHandler
-        ; change 0th sprite's Y position
-        lda $D001
-        cmp #START_LINE
-        beq @Down ; carry will be always set after this operation
+; csak a 11. ciklusban kapunk processzoridőt
+; az első sorból elfogyasztjuk mind a 47 elérhető ciklust
+; a másodikból pedig 4-et, ezért 43-at kell majd várni
+
+; alja-teteje pozíció váltás
+        lda $D001 ; 4 cycles
+        cmp #START_LINE ; 2 cycles
+        beq @Down ; carry will be always set after this operation ; 3 cycles
 
 @Up     sbc #21
-        ldx #MID_LINE-1
+        ldx #MID_LINE-3
         jmp @End
 
-@Down   clc
-        adc #21
-        ldx #MID_LINE+50
+@Down   clc ; 2 cycles
+        adc #21 ; 2 cycles
+        ldx #MID_LINE+50 ; 2 cycles
+        ; ez a rész: 15 cycles
 
-@End    sta $D001
+@End    sta $D001 ; 4 cycles
         sta $D003
         sta $D005
         sta $D007
@@ -90,19 +95,29 @@ VicIrqHandler
         sta $D00B
         sta $D00D
         sta $D00F
-        stx $D012
+        stx $D012 ; 4 cycles
+        ; ez a rész: 8 * 4 + 4 = 36 cycles
+        ; total: 15 + 36 = 51 cycles
+        
+; várakozás, az 58. ciklust már lefoglalja a VIC => 43 ciklust kell várni
+        jmp *+3 ; 3 cycles
+repeat 30 ; 60 cycles (32-nek kéne lennie, de valamiért így működik :/ )
+        nop
+endrepeat
+        ; előrehozott kód, a vége gyorsításának érdekében
+        clc ; 2 cycles
+        lda #$01 ; 2 cycles
+        eor $07F8 ; 4 cycles
 
+; a 11. ciklusban kapunk újra processzoridőt, az 58.-ig készen kell lennünk => 47 ciklusunk van
+; alja-teteje kinézet váltás
 ; V1
-;        ; alja-teteje váltás
 ;        lda #$01 ; 2 cycles
 ;        eor $07F8 ; 4 cycles
 ;        sta $07F8 ; 4 cycles
 ;        ; total: 10 * 8 = 80 cycles
 
 ; V2
-        clc ; 2 cycles
-        lda #$01 ; 2 cycles
-        eor $07F8 ; 4 cycles
         sta $07F8 ; 4 cycles
 
         adc #2 ; 2 cycles
@@ -120,7 +135,8 @@ VicIrqHandler
         sta $07FE
         adc #2
         sta $07FF
-        ; total: 12 + 7 * 6 = 54 cycles
+        ; total: 4 + 7 * 6 = 46 cycles => éppen belefér az egy sornyi 47-be
+        ; egész total: 168 ciklus (TODO: rájönni hogy mi a francért kell ennyit várni)
 
         and #$01
         bne @Finish ; csak egyszer változtassuk az X-et
@@ -195,12 +211,13 @@ SetupSprites
         sta $D02A ; color of sprite 3
         sta $D02B ; color of sprite 4
         sta $D02C ; color of sprite 5
+        lda #$00 ; black
         sta $D02D ; color of sprite 6
         sta $D02E ; color of sprite 7
 
         lda #$00
         sta $D01C ; multicolor mode off
-        lda #$FF
+        lda #%11111111
         sta $D015 ; turn the sprites on
 
         lda #240

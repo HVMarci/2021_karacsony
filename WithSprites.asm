@@ -178,6 +178,9 @@ endrepeat
         ora #128
 
         tay
+        lda $D010
+        and #128
+        bne @EfN
 
         lda $07F8
         eor #%00000010
@@ -196,7 +199,7 @@ endrepeat
         sta $07FE
         adc #4
 
-        tya
+@EfN    tya
 
 @SE     eor $D010 ; 8th bit of X positions
         sta $D010
